@@ -1,105 +1,94 @@
 USERS = {}
 
 
-def unknown_command(_):
-    return 'Unknown command'
-
-
 def input_error(func):
     def inner(*args):
         try:
             result = func(*args)
-        except NameError:
-            result = (unknown_command, [])
-            print('Name')
-        except KeyError:
-            result = 'Wrong name'
-            print('Key')
-        except ValueError:
-            result = 'Give me name and phone please'
-            print('Value')
-        except IndexError:
-            result = 'Enter user name'
-            print('Index')
         except TypeError:
-            result = 'Wrong type'
+            result = 'Missing name or phone'
             print('Type')
+        except UnboundLocalError:
+            result = 'Unknown command'
+            print('Unbound')
         return result
     return inner
 
 
-def hello_user(_):
+def unknown_command(command: str) -> str:
+    return f'Not command "{command}"'
+
+
+def hello_user() -> str:
     return 'How can I help you?'
 
 
-def exit_func(_):
-    return 'stop'
+def exit_func() -> str:
+    return 'Good buy!'
 
 
 @input_error
-def add_user(args):
-    name, phone = args
-    USERS[name] = phone
-    return f'User {name} added!'
+def add_contact(name: str, phone: str) -> str:
+    if name in USERS:
+        return f'Contact Name: {name}, phone {USERS[name]} already exists'
+    else:
+        USERS[name] = phone
+        return f'Contact Name: {name}, added phone {phone}'
 
 
 @input_error
-def change_phone(args):
-    name, phone = args
+def change_phone(name: str, phone: str) -> str:
     old_phone = USERS[name]
     USERS[name] = phone
-    return f'For user {name} old phone {old_phone} is changed with {phone}'
-
-
-def show_all(_):
-    result = ''
-    for name, phone in USERS.items():
-        result += f'Name: {name}, Phone: {phone}\n'
-    result = result.removesuffix('\n')
-    return result
-
-
-def show_phone(args):
-    result = f'Name: {args[0]}, Phone: {USERS.get(args[0])}'
-    return result
-
-
-HANDLERS = {
-    'hello': hello_user,
-    'add': add_user,
-    'change': change_phone,
-    'show all': show_all,
-    'exit': exit_func,
-    'good bye': exit_func,
-    'close': exit_func,
-    'phone': show_phone,
-    'error': unknown_command
-}
+    return f'Contact Name: {name}, changed phone {old_phone} with a new {phone}'
 
 
 @input_error
-def parse_input(user_input):
-    command, *args = user_input.split(' ')
-    command = command.lstrip()
-    if args:
-        if args[0] == 'all':
-            command = command + ' all'
-        elif args[0] == 'bye':
-            command = command + ' bye'
-    if command not in HANDLERS:
-        raise NameError
-    handler = HANDLERS[command.lower()]
-    return handler, args
+def show_contact(name: str) -> str:
+    if name in USERS:
+        result = f'Contact Name: {name}, phone: {USERS.get(name)}'
+    else:
+        result = f'Name: {name}, not in phone list'
+    return result
+
+
+@input_error
+def show_all(all: str) -> str:
+    if all in ('all', 'ALL', 'All'):
+        result = 'Showing all contacts'
+        if USERS.items():
+            for name, phone in USERS.items():
+                result += f'\nName: {name}, Phone: {phone}'
+        else:
+            result = 'No contacts, please add'
+    return result
+
+
+commands = {
+    'hello': hello_user,
+    'add': add_contact,
+    'change': change_phone,
+    'show': show_all,
+    'phone': show_contact,
+    'exit': exit_func,
+    'goodbye': exit_func,
+    'close': exit_func,
+}
 
 
 def main():
     while True:
-        user_input = input('Please enter command and args (if any): ')
-        main_command, *args = parse_input(user_input)
-        result = main_command(*args)
-        if result == 'stop':
-            print('Good bye!')
-            break
+        command, *data = input('Please enter request: ').strip().split(' ', 1)
+        if commands.get(command.lower()):
+            handler = commands.get(command.lower())
+            if data:
+                data = data[0].split(', ')
+            result = handler(*data)
+            if result == 'Good buy!':
+                print(result)
+                break
+        else:
+            result = unknown_command(command)
         print(result)
 
 
